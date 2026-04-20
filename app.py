@@ -3,9 +3,16 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-st.title("🎮 스팀(Steam) 실시간 할인 대시보드")
-st.write("스팀 상점에서 현재 할인 중인 게임 목록을 가져옵니다.")
+# 화면을 넓게 쓰도록 설정
+st.set_page_config(layout="wide")
 
+st.title("🎮 스팀(Steam) 실시간 할인 대시보드")
+
+# 왼쪽 사이드바(메뉴)에 검색창을 고정으로 빼둡니다.
+st.sidebar.header("⚙️ 검색 및 설정")
+search_term = st.sidebar.text_input("🔍 게임 이름 검색")
+
+# 버튼을 누르면 수집 시작
 if st.button("할인 데이터 수집 시작"):
     st.info("데이터를 가져오는 중입니다...")
     
@@ -24,16 +31,18 @@ if st.button("할인 데이터 수집 시작"):
         data.append({"게임명": title, "현재 가격": price})
         
     if data:
-        df = pd.DataFrame(data)
+        # 서버가 데이터를 까먹지 않게 'df'라는 이름의 저장소에 보관해둡니다.
+        st.session_state['df'] = pd.DataFrame(data)
         st.success("수집 완료!")
-        
-        # --- 검색 기능이 추가된 부분 ---
-        search_term = st.text_input("🔍 검색할 게임 이름을 입력하세요:")
-        if search_term:
-            filtered_df = df[df['게임명'].str.contains(search_term, case=False, na=False)]
-            st.dataframe(filtered_df, use_container_width=True)
-        else:
-            st.dataframe(df, use_container_width=True)
-        # -------------------------------
     else:
         st.error("데이터를 가져오지 못했습니다.")
+
+# 저장소에 데이터가 존재하면, 새로고침이 되어도 표를 계속 그려줍니다.
+if 'df' in st.session_state:
+    df = st.session_state['df']
+    
+    # 검색어 필터링 적용
+    if search_term:
+        df = df[df['게임명'].str.contains(search_term, case=False, na=False)]
+        
+    st.dataframe(df, use_container_width=True)
