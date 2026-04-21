@@ -24,12 +24,16 @@ if st.button("실시간 데이터 수집 시작"):
     
     data = []
     for item in items[:50]:
-        title = item.find("span", class_="title").text.strip()
-        price_elem = item.find("div", class_="discount_final_price")
-        price = price_elem.text.strip() if price_elem else "가격 정보 없음"
+        # 네이버 뉴스 구조에 맞게 제목과 언론사 태그를 찾습니다.
+        title_elem = item.find("a", class_="news_tit")
+        press_elem = item.find("a", class_="info press")
+        
+        title = title_elem.text.strip() if title_elem else "제목 없음"
+        # 언론사 태그가 없는 경우(예: 네이버 자체 텍스트)를 대비한 방어 코드
+        press = press_elem.text.replace("언론사 선정", "").strip() if press_elem else "정보 없음"
         
         data.append({CLIENT_SETTINGS["columns"][0]: title, 
-                     CLIENT_SETTINGS["columns"][1]: price})
+                     CLIENT_SETTINGS["columns"][1]: press})
         
     if data:
         st.session_state['df'] = pd.DataFrame(data)

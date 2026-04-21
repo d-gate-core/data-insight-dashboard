@@ -1,11 +1,11 @@
 # config.py
 
 CLIENT_SETTINGS = {
-    "title": "🔥 스팀(Steam) 최고 인기 게임 대시보드",
-    "target_url": "https://store.steampowered.com/search/?filter=topsellers",
-    "item_tag": "a", 
-    "item_class": "search_result_row",
-    "columns": ["게임명", "현재 가격"],
-    "sidebar_title": "🚀 인기 게임 검색",
-    "search_label": "🔍 인기 게임 찾기"
+    "title": "📈 실시간 뉴스 키워드 모니터링 대시보드",
+    "target_url": "https://search.naver.com/search.naver?where=news&query=데이터분석",
+    "item_tag": "div", 
+    "item_class": "news_area",
+    "columns": ["기사 제목", "언론사"],
+    "sidebar_title": "⚙️ 모니터링 설정",
+    "search_label": "🔍 결과 내 재검색"
 }
