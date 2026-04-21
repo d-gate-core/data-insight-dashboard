@@ -2,47 +2,44 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+from config import CLIENT_SETTINGS  # 설정 파일을 불러옵니다.
 
-# 화면을 넓게 쓰도록 설정
-st.set_page_config(layout="wide")
+# 화면 설정 (설정 파일의 제목 사용)
+st.set_page_config(layout="wide", page_title=CLIENT_SETTINGS["title"])
+st.title(CLIENT_SETTINGS["title"])
 
-st.title("🎮 스팀(Steam) 실시간 할인 대시보드")
+# 사이드바 설정
+st.sidebar.header(CLIENT_SETTINGS["sidebar_title"])
+search_term = st.sidebar.text_input(CLIENT_SETTINGS["search_label"])
 
-# 왼쪽 사이드바(메뉴)에 검색창을 고정으로 빼둡니다.
-st.sidebar.header("⚙️ 검색 및 설정")
-search_term = st.sidebar.text_input("🔍 게임 이름 검색")
-
-# 버튼을 누르면 수집 시작
-if st.button("할인 데이터 수집 시작"):
+# 데이터 수집 로직
+if st.button("실시간 데이터 수집 시작"):
     st.info("데이터를 가져오는 중입니다...")
     
-    url = "https://store.steampowered.com/search/?specials=1"
-    response = requests.get(url)
+    response = requests.get(CLIENT_SETTINGS["target_url"])
     soup = BeautifulSoup(response.text, "html.parser")
     
-    games = soup.find_all("a", class_="search_result_row")
+    # 설정 파일에 적힌 태그와 클래스로 데이터를 찾습니다.
+    items = soup.find_all(CLIENT_SETTINGS["item_tag"], class_=CLIENT_SETTINGS["item_class"])
     
     data = []
-    for game in games[:50]:
-        title = game.find("span", class_="title").text.strip()
-        price_elem = game.find("div", class_="discount_final_price")
-        price = price_elem.text.strip() if price_elem else "무료 또는 가격 없음"
+    for item in items[:50]:
+        title = item.find("span", class_="title").text.strip()
+        price_elem = item.find("div", class_="discount_final_price")
+        price = price_elem.text.strip() if price_elem else "가격 정보 없음"
         
-        data.append({"게임명": title, "현재 가격": price})
+        data.append({CLIENT_SETTINGS["columns"][0]: title, 
+                     CLIENT_SETTINGS["columns"][1]: price})
         
     if data:
-        # 서버가 데이터를 까먹지 않게 'df'라는 이름의 저장소에 보관해둡니다.
         st.session_state['df'] = pd.DataFrame(data)
         st.success("수집 완료!")
-    else:
-        st.error("데이터를 가져오지 못했습니다.")
 
-# 저장소에 데이터가 존재하면, 새로고침이 되어도 표를 계속 그려줍니다.
+# 결과 출력 및 검색 필터링
 if 'df' in st.session_state:
     df = st.session_state['df']
-    
-    # 검색어 필터링 적용
     if search_term:
-        df = df[df['게임명'].str.contains(search_term, case=False, na=False)]
-        
+        # 첫 번째 열(게임명 등)을 기준으로 검색합니다.
+        col_name = CLIENT_SETTINGS["columns"][0]
+        df = df[df[col_name].str.contains(search_term, case=False, na=False)]
     st.dataframe(df, use_container_width=True)
