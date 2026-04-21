@@ -19,16 +19,25 @@ if st.button("실시간 데이터 수집 시작"):
     
     try:
         response = requests.get(CLIENT_SETTINGS["target_url"], headers=headers)
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.text, "xml") # RSS 처리를 위해 xml 파서 사용
         items = soup.find_all(CLIENT_SETTINGS["item_tag"])
         
         data = []
         for item in items[:50]:
             title_elem = item.find("title")
-            title = title_elem.text.strip() if title_elem else "제목 없음"
+            pubdate_elem = item.find("pubDate")
+            link_elem = item.find("link")
             
-            # 기사 제목만 리스트에 담습니다.
-            data.append({CLIENT_SETTINGS["columns"][0]: title})
+            title = title_elem.text.strip() if title_elem else "제목 없음"
+            # 날짜 데이터에서 불필요한 요일과 시간대 정보 깔끔하게 자르기
+            pubdate = pubdate_elem.text.strip()[5:16] if pubdate_elem else "날짜 없음"
+            link = link_elem.text.strip() if link_elem else ""
+            
+            data.append({
+                CLIENT_SETTINGS["columns"][0]: title,
+                CLIENT_SETTINGS["columns"][1]: pubdate,
+                CLIENT_SETTINGS["columns"][2]: link
+            })
             
         if data:
             st.session_state['df'] = pd.DataFrame(data)
@@ -44,4 +53,12 @@ if 'df' in st.session_state:
     if search_term:
         col_name = CLIENT_SETTINGS["columns"][0]
         df = df[df[col_name].str.contains(search_term, case=False, na=False)]
-    st.dataframe(df, use_container_width=True)
+        
+    # Streamlit 표에서 링크를 클릭 가능한 형태로 변환하여 출력
+    st.dataframe(
+        df, 
+        column_config={
+            CLIENT_SETTINGS["columns"][2]: st.column_config.LinkColumn("원문 링크 확인")
+        },
+        use_container_width=True
+    )
