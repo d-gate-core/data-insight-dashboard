@@ -16,7 +16,11 @@ search_term = st.sidebar.text_input(CLIENT_SETTINGS["search_label"])
 if st.button("실시간 데이터 수집 시작"):
     st.info("데이터를 가져오는 중입니다...")
     
-    response = requests.get(CLIENT_SETTINGS["target_url"])
+    # 💡 네이버 보안을 통과하기 위한 크롬 브라우저 가짜 신분증(User-Agent) 추가
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    response = requests.get(CLIENT_SETTINGS["target_url"], headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
     
     # 설정 파일에 적힌 태그와 클래스로 데이터를 찾습니다.
@@ -24,12 +28,10 @@ if st.button("실시간 데이터 수집 시작"):
     
     data = []
     for item in items[:50]:
-        # 네이버 뉴스 구조에 맞게 제목과 언론사 태그를 찾습니다.
         title_elem = item.find("a", class_="news_tit")
         press_elem = item.find("a", class_="info press")
         
         title = title_elem.text.strip() if title_elem else "제목 없음"
-        # 언론사 태그가 없는 경우(예: 네이버 자체 텍스트)를 대비한 방어 코드
         press = press_elem.text.replace("언론사 선정", "").strip() if press_elem else "정보 없음"
         
         data.append({CLIENT_SETTINGS["columns"][0]: title, 
@@ -38,6 +40,9 @@ if st.button("실시간 데이터 수집 시작"):
     if data:
         st.session_state['df'] = pd.DataFrame(data)
         st.success("수집 완료!")
+    else:
+        # 데이터 수집에 실패했을 경우 화면에 표시
+        st.error("데이터를 불러오지 못했습니다. 대상 사이트의 구조가 바뀌었거나 차단되었습니다.")
 
 # 결과 출력 및 검색 필터링
 if 'df' in st.session_state:
