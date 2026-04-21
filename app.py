@@ -19,20 +19,16 @@ if st.button("실시간 데이터 수집 시작"):
     
     try:
         response = requests.get(CLIENT_SETTINGS["target_url"], headers=headers)
-        # RSS 데이터 구조를 읽기 위해 파싱
         soup = BeautifulSoup(response.text, "html.parser")
         items = soup.find_all(CLIENT_SETTINGS["item_tag"])
         
         data = []
         for item in items[:50]:
             title_elem = item.find("title")
-            source_elem = item.find("source")
-            
             title = title_elem.text.strip() if title_elem else "제목 없음"
-            source = source_elem.text.strip() if source_elem else "출처 없음"
             
-            data.append({CLIENT_SETTINGS["columns"][0]: title, 
-                         CLIENT_SETTINGS["columns"][1]: source})
+            # 기사 제목만 리스트에 담습니다.
+            data.append({CLIENT_SETTINGS["columns"][0]: title})
             
         if data:
             st.session_state['df'] = pd.DataFrame(data)
